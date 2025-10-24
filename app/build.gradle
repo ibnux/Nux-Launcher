@@ -1,0 +1,51 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    compileSdkVersion 34
+    defaultConfig {
+        applicationId "com.ibnux.launcher"
+        minSdkVersion 14
+        //noinspection ExpiredTargetSdkVersion
+        targetSdkVersion 29
+        versionCode 13
+        versionName "1.4.2"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    namespace "com.ibnux.launcher"
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def projectName = "NuxLauncher"
+            def versionName = variant.versionName
+            def versionCode = variant.versionCode
+            def buildTypeName = variant.buildType.name
+            def flavorName = variant.flavorName // If you have flavors
+
+            // Example filename: AwesomeApp-1.0(1)-release.apk
+            output.outputFileName = "${projectName}_${versionCode}.apk"
+
+            // If you have flavors, you might include them:
+            // if (flavorName != null && !flavorName.isEmpty()) {
+            //     output.outputFileName = "${projectName}-${flavorName}-${versionName}(${versionCode})-${buildTypeName}.apk"
+            // }
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
