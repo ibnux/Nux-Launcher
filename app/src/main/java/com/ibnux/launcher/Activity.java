@@ -7,6 +7,8 @@ import static android.content.Intent.ACTION_PACKAGE_REPLACED;
 import static android.content.Intent.CATEGORY_LAUNCHER;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.WallpaperManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -25,10 +27,12 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
@@ -170,13 +174,78 @@ public final class Activity extends android.app.Activity implements
 
     private void askFile(){
         try {
+            Log.d("NUX", "askfile");
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(Intent.createChooser(intent, "Pilih gambar"), 321);
+            PackageManager manager = getPackageManager();
+            List<ResolveInfo> infos = manager.queryIntentActivities(intent, 0);
+            if (infos.size() > 0) {
+                startActivityForResult(Intent.createChooser(intent, "Pilih gambar"), 321);
+            } else {
+                setWallpaper("/sdcard/wallpaper.jpg");
+            }
+            Log.d("NUX", "open intent");
         }catch (Exception e){
+            e.printStackTrace();
+            Log.d("NUX", "set default");
             setWallpaper("/sdcard/wallpaper.jpg");
         }
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if(list.getVisibility() == View.GONE){
+            list.setVisibility(View.VISIBLE);
+            list.animate()
+                    .alpha(1f) // Animate alpha to 0 (fully transparent)
+                    .setDuration(5000) // Set animation duration in milliseconds
+                    .setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            super.onAnimationEnd(animation);
+                        }
+                    });
+        }
+        startTimer();
+        return super.onKeyUp(keyCode, event);
+    }
+
+    boolean isTimerStart = false;
+    long lastClick = 0;
+
+    private void startTimer(){
+        Log.d("NUX", "startTimer");
+        lastClick = System.currentTimeMillis();
+        if(!isTimerStart){
+            isTimerStart = true;
+            loopTimer();
+        }
+    }
+
+    private void loopTimer(){
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                long k = System.currentTimeMillis() - lastClick;
+                Log.d("NUX", "timer: " + k);
+                if(k > 5000) {
+                    isTimerStart = false;
+                    list.animate()
+                            .alpha(0f) // Animate alpha to 0 (fully transparent)
+                            .setDuration(5000) // Set animation duration in milliseconds
+                            .setListener(new AnimatorListenerAdapter() {
+                                @Override
+                                public void onAnimationEnd(Animator animation) {
+                                    super.onAnimationEnd(animation);
+                                    list.setVisibility(View.GONE); // Set visibility to GONE after animation ends
+                                }
+                            });
+                }else{
+                    loopTimer();
+                }
+            }
+        }, 1000);
     }
 
     @Override
@@ -206,6 +275,7 @@ public final class Activity extends android.app.Activity implements
 
 
     private void setWallpaper(String path){
+        Log.d("NUX", "Image path: "+path);
         try {
             File imageFile = new File(path);
             if (imageFile.exists()) {
@@ -238,9 +308,12 @@ public final class Activity extends android.app.Activity implements
                     Bitmap scaledBitmap = scaleBitmapProportionally(bitmap, width, height);
                     wm.setBitmap(scaledBitmap);
                     bg.setImageBitmap(bitmap);
+                    Log.d("NUX", "Image setted");
                 }else{
                     Log.d("NUX", "Image Null");
                 }
+            }else{
+                Toast.makeText(this, "Simpan wallpaper.jpg di internal memory", Toast.LENGTH_LONG).show();
             }
 
         } catch (Exception e){
