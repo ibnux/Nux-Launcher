@@ -39,15 +39,17 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public final class Activity extends android.app.Activity implements
+public final class MainActivity extends android.app.Activity implements
         Comparator<Model>,
         AdapterView.OnItemClickListener,
         AdapterView.OnItemLongClickListener{
@@ -96,7 +98,17 @@ public final class Activity extends android.app.Activity implements
 
         update();
 
+
+        File f = new File(getCacheDir(), "wallpaper.jpg");
+        if(f.exists()){
+            setWallpaper(f.getPath());
+        }else{
+            setWallpaper("/sdcard/wallpaper.jpg");
+        }
+
     }
+
+
 
     private void checkPermission() {
         // Memeriksa apakah versi Android >= Marshmallow (API 23)
@@ -199,7 +211,7 @@ public final class Activity extends android.app.Activity implements
             list.setVisibility(View.VISIBLE);
             list.animate()
                     .alpha(1f) // Animate alpha to 0 (fully transparent)
-                    .setDuration(5000) // Set animation duration in milliseconds
+                    .setDuration(1000) // Set animation duration in milliseconds
                     .setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
@@ -233,7 +245,7 @@ public final class Activity extends android.app.Activity implements
                     isTimerStart = false;
                     list.animate()
                             .alpha(0f) // Animate alpha to 0 (fully transparent)
-                            .setDuration(5000) // Set animation duration in milliseconds
+                            .setDuration(1000) // Set animation duration in milliseconds
                             .setListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
@@ -307,7 +319,25 @@ public final class Activity extends android.app.Activity implements
 //                    }
                     Bitmap scaledBitmap = scaleBitmapProportionally(bitmap, width, height);
                     wm.setBitmap(scaledBitmap);
-                    bg.setImageBitmap(bitmap);
+                    bg.setImageBitmap(scaledBitmap);
+
+                    File f = new File(getCacheDir(), "wallpaper.jpg");
+                    if(!path.equals(f.getPath())) {
+                        if (f.exists()) {
+                            f.delete();
+                        }
+                        f.createNewFile();
+
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 0, bos);
+                        byte[] bitmapdata = bos.toByteArray();
+
+//write the bytes in file
+                        FileOutputStream fos = new FileOutputStream(f);
+                        fos.write(bitmapdata);
+                        fos.flush();
+                        fos.close();
+                    }
                     Log.d("NUX", "Image setted");
                 }else{
                     Log.d("NUX", "Image Null");
@@ -456,7 +486,8 @@ public final class Activity extends android.app.Activity implements
         Intent intent = new Intent(ACTION_MAIN, null);
         intent.addCategory(CATEGORY_LAUNCHER);
         List<ResolveInfo> availableActivities = packageManager.queryIntentActivities(intent, 0);
-        ArrayList<Model> models = new ArrayList<>();
+        ArrayList<Model> models = new ArrayList<>();//
+        ArrayList<Model> modelFirst = new ArrayList<>();
         long id = 0;
         Drawable deficon = getResources().getDrawable(R.drawable.ic_app);
         for (ResolveInfo resolveInfo : availableActivities) {
@@ -467,13 +498,22 @@ public final class Activity extends android.app.Activity implements
             } catch (PackageManager.NameNotFoundException e) {
                 //ignore
             }
-            models.add(new Model(
-                    ++id,
-                    resolveInfo.loadLabel(packageManager).toString(),
-                    resolveInfo.activityInfo.packageName,
-                    icon));
+            if(resolveInfo.activityInfo.packageName.startsWith("com.ibnux")){
+                modelFirst.add(new Model(
+                        ++id,
+                        resolveInfo.loadLabel(packageManager).toString(),
+                        resolveInfo.activityInfo.packageName,
+                        icon));
+            }else{
+                models.add(new Model(
+                        ++id,
+                        resolveInfo.loadLabel(packageManager).toString(),
+                        resolveInfo.activityInfo.packageName,
+                        icon));
+            }
         }
         Collections.sort(models, this);
+        Collections.sort(modelFirst, this);
         models.add(new Model(
                 ++id,
                 "Besarin teks",
@@ -489,8 +529,8 @@ public final class Activity extends android.app.Activity implements
                 "Set Wallpaper",
                 "com.refresh.wallpaper",
                 getResources().getDrawable(R.drawable.ic_wallpaper)));
-
-        adapter.update(models);
+        modelFirst.addAll(models);
+        adapter.update(modelFirst);
     }
 
 }

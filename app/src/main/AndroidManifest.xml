@@ -18,13 +18,12 @@
 
         <activity
             android:exported="true"
-            android:name="com.ibnux.launcher.Activity"
+            android:name="com.ibnux.launcher.MainActivity"
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
             android:windowSoftInputMode="stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
